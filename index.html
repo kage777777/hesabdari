@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دفتر | حسابداری کالا و فاکتور</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F5C48">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --paper:#F3EFE3;
+    --paper-2:#FFFDF7;
+    --ink:#22301F;
+    --ink-soft:#5B6456;
+    --primary:#1F5C48;
+    --primary-dark:#123A2D;
+    --accent:#B8863A;
+    --accent-soft:#EFE2C6;
+    --line:#D9D2BC;
+    --line-strong:#C3BA9E;
+    --danger:#A23E3E;
+    --danger-soft:#F3DEDE;
+    --white:#FFFFFF;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(34,48,31,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Vazirmatn',sans-serif;
+    min-height:100vh;
+    direction:rtl;
+  }
+  .app{max-width:980px;margin:0 auto;padding:20px 16px 80px;}
+
+  header.top{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:6px 2px 22px;
+    border-bottom:2px solid var(--primary);
+    margin-bottom:18px;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand h1{font-size:26px;font-weight:800;margin:0;color:var(--primary-dark);}
+  .brand span{font-size:13px;color:var(--ink-soft);}
+
+  nav.tabs{
+    display:flex;gap:4px;background:var(--paper-2);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:4px;margin-bottom:22px;overflow-x:auto;
+  }
+  nav.tabs button{
+    flex:1;white-space:nowrap;
+    background:transparent;border:none;cursor:pointer;
+    font-family:inherit;font-size:14px;font-weight:600;
+    color:var(--ink-soft);padding:10px 10px;border-radius:7px;
+    transition:background .15s, color .15s;
+  }
+  nav.tabs button.active{background:var(--primary);color:var(--white);}
+  nav.tabs button:not(.active):hover{background:var(--accent-soft);color:var(--ink);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .panel{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:18px;
+  }
+  .panel h2{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--primary-dark);}
+
+  .field-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  @media (max-width:720px){.field-grid{grid-template-columns:repeat(2,1fr);}}
+  label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:4px;font-weight:600;}
+  input,select{
+    width:100%;font-family:inherit;font-size:14px;
+    padding:9px 10px;border:1px solid var(--line-strong);
+    border-radius:7px;background:var(--white);color:var(--ink);
+  }
+  input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(31,92,72,.12);}
+
+  .btn{
+    font-family:inherit;font-size:14px;font-weight:700;
+    padding:9px 18px;border-radius:7px;border:none;cursor:pointer;
+    background:var(--primary);color:var(--white);
+    transition:background .15s;
+  }
+  .btn:hover{background:var(--primary-dark);}
+  .btn.secondary{background:transparent;color:var(--primary);border:1px solid var(--primary);}
+  .btn.secondary:hover{background:var(--accent-soft);}
+  .btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger);}
+  .btn.danger:hover{background:var(--danger-soft);}
+  .btn.small{padding:5px 10px;font-size:12px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  .row-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
+
+  .type-toggle{display:flex;border:1px solid var(--line-strong);border-radius:7px;overflow:hidden;}
+  .type-toggle button{
+    flex:1;font-family:inherit;font-size:14px;font-weight:700;
+    padding:9px 10px;border:none;cursor:pointer;background:var(--white);color:var(--ink-soft);
+  }
+  .type-toggle button+button{border-right:1px solid var(--line-strong);}
+  .type-toggle button.active-buy{background:var(--ink);color:var(--white);}
+  .type-toggle button.active-sell{background:var(--primary);color:var(--white);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    text-align:right;font-weight:700;color:var(--ink-soft);
+    border-bottom:2px solid var(--line-strong);padding:8px 6px;
+    font-size:12px;
+  }
+  tbody td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tbody tr:hover{background:rgba(31,92,72,.04);}
+  .num{font-variant-numeric:tabular-nums;}
+  .money{color:var(--accent);font-weight:700;white-space:nowrap;}
+  .profit-pos{color:var(--primary);font-weight:700;}
+  .profit-neg{color:var(--danger);font-weight:700;}
+
+  .type-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+  .type-badge.buy{background:var(--line);color:var(--ink);}
+  .type-badge.sell{background:var(--accent-soft);color:var(--primary-dark);}
+
+  .editable{cursor:pointer;border-bottom:1px dashed var(--line-strong);padding-bottom:1px;}
+  .editable:hover{border-bottom-color:var(--accent);}
+  .edit-input{width:110px;padding:4px 6px;font-size:13px;}
+
+  .empty{padding:30px 10px;text-align:center;color:var(--ink-soft);font-size:14px;}
+
+  .search-bar{display:flex;gap:10px;margin-bottom:14px;}
+  .search-bar input{flex:1;}
+
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media (max-width:720px){.metrics{grid-template-columns:repeat(2,1fr);}}
+  .metric{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+  .metric .label{font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
+  .metric .value{font-size:20px;font-weight:800;color:var(--primary-dark);}
+  .metric .value.accent{color:var(--accent);}
+
+  .category-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  @media (max-width:720px){.category-grid{grid-template-columns:repeat(2,1fr);}}
+  .category-card{
+    display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+    text-align:right;font-family:inherit;cursor:pointer;
+    background:var(--white);border:1px solid var(--line-strong);border-radius:var(--radius);
+    padding:14px;transition:border-color .15s, background .15s;
+  }
+  .category-card:hover{border-color:var(--primary);background:var(--accent-soft);}
+  .category-card .cat-name{font-size:14px;font-weight:700;color:var(--ink);}
+  .category-card .cat-count{font-size:12px;color:var(--ink-soft);}
+
+  .browse-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .browse-header h3{margin:0;font-size:15px;font-weight:700;color:var(--primary-dark);}
+
+  .cat-manage-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:8px 4px;border-bottom:1px solid var(--line);
+  }
+  .cat-manage-row:last-child{border-bottom:none;}
+  .cat-manage-row .cat-manage-name{font-size:13px;font-weight:600;}
+
+  .date-picker{display:flex;gap:6px;}
+  .date-picker select{flex:1;padding:9px 4px;text-align:center;}
+
+  .inv-add-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;}
+  @media (max-width:720px){.inv-add-row{grid-template-columns:1fr 1fr;}}
+
+  .autocomplete-wrap{position:relative;}
+  .autocomplete-list{
+    position:absolute;top:calc(100% + 4px);right:0;left:0;
+    background:var(--white);border:1px solid var(--line-strong);border-radius:8px;
+    max-height:220px;overflow-y:auto;z-index:30;
+    box-shadow:0 6px 18px rgba(34,48,31,.14);
+    display:none;
+  }
+  .autocomplete-list.show{display:block;}
+  .autocomplete-item{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--line);}
+  .autocomplete-item:last-child{border-bottom:none;}
+  .autocomplete-item:hover{background:var(--accent-soft);}
+  .autocomplete-empty{padding:9px 12px;font-size:12px;color:var(--ink-soft);}
+  .autocomplete-new-hint{color:var(--primary);font-weight:700;}
+
+  .total-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:14px;padding-top:14px;border-top:2px solid var(--primary);
+  }
+  .total-bar .label{font-size:15px;font-weight:700;}
+  .total-bar .value{font-size:22px;font-weight:800;color:var(--accent);}
+
+  .invoice-list-item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px 6px;border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap;
+  }
+  .invoice-list-item .meta{font-size:13px;color:var(--ink-soft);}
+  .invoice-list-item .num-badge{
+    display:inline-block;background:var(--accent-soft);color:var(--primary-dark);
+    font-weight:700;font-size:12px;padding:3px 10px;border-radius:20px;margin-left:8px;
+  }
+
+  #print-area{display:none;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #print-area, #print-area *{visibility:visible;}
+    #print-area{display:block;position:absolute;top:0;right:0;left:0;padding:30px;}
+  }
+
+  .print-header{display:flex;justify-content:space-between;border-bottom:3px solid var(--primary);padding-bottom:14px;margin-bottom:18px;}
+  .print-header h2{margin:0;font-size:22px;color:var(--primary-dark);}
+  .print-table{width:100%;border-collapse:collapse;margin-bottom:18px;}
+  .print-table th{background:var(--accent-soft);padding:8px;font-size:12px;border:1px solid var(--line-strong);}
+  .print-table td{padding:8px;border:1px solid var(--line);font-size:13px;}
+  .print-total{text-align:left;font-size:18px;font-weight:800;color:var(--primary-dark);}
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--primary-dark);color:var(--white);padding:10px 20px;
+    border-radius:8px;font-size:13px;opacity:0;pointer-events:none;
+    transition:opacity .25s;z-index:50;
+  }
+  .toast.show{opacity:1;}
+
+  .loading{text-align:center;padding:60px 10px;color:var(--ink-soft);}
+
+  .gate-overlay{
+    position:fixed;inset:0;background:var(--paper);z-index:100;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .gate-box{
+    background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:28px;max-width:340px;width:100%;text-align:center;
+  }
+  .gate-box h2{margin:0 0 6px;font-size:20px;color:var(--primary-dark);}
+  .gate-box p{margin:0 0 18px;font-size:13px;color:var(--ink-soft);}
+  .gate-box input{margin-bottom:12px;text-align:center;}
+  .gate-box .btn{width:100%;}
+  .gate-error{color:var(--danger);font-size:13px;margin-bottom:10px;display:none;min-height:16px;}
+  .gate-status{color:var(--ink-soft);font-size:12px;margin-top:14px;}
+</style>
+</head>
+<body>
+
+<div class="gate-overlay" id="gate-overlay">
+  <div class="gate-box">
+    <h2>دفتر</h2>
+    <p>برای ورود، رمز مشترک خانوادگی را وارد کنید.</p>
+    <div class="gate-error" id="gate-error"></div>
+    <input type="password" id="gate-password" placeholder="رمز مشترک" autocomplete="off">
+    <button class="btn" id="gate-submit">ورود</button>
+    <div class="gate-status" id="gate-status"></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <h1>دفتر</h1>
+      <span>حسابداری کالا و فاکتور</span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-view="products" class="active">کالاها و قیمت‌ها</button>
+    <button data-view="invoice">فاکتور فروش</button>
+    <button data-view="purchase">فاکتور خرید</button>
+    <button data-view="invoices">فاکتورها</button>
+    <button data-view="report">گزارش</button>
+  </nav>
+
+  <div id="loading" class="loading">در حال بارگذاری اطلاعات...</div>
+
+  <div id="views" style="display:none;">
+
+    <section class="view active" data-view="products">
+      <div class="panel">
+        <h2>افزودن کالا</h2>
+        <div class="field-grid" style="grid-template-columns:1.4fr 1fr 1fr 1fr;">
+          <div>
+            <label>نام کالا</label>
+            <input type="text" id="p-name" placeholder="مثلا مته فلز ۸ میل">
+          </div>
+          <div>
+            <label>دسته‌بندی</label>
+            <select id="p-category"></select>
+          </div>
+          <div>
+            <label>قیمت (تومان)</label>
+            <input type="number" id="p-price" placeholder="0" min="0">
+          </div>
+          <div>
+            <label>تعداد موجودی</label>
+            <input type="number" id="p-qty" placeholder="0" min="0" step="1">
+          </div>
+        </div>
+        <div id="p-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>
+        <div class="row-actions">
+          <button class="btn" id="p-add-btn">ثبت کالا</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>لیست کالاها و قیمت‌ها</h2>
+        <div class="search-bar">
+          <input type="text" id="p-search" placeholder="جستجوی نام کالا...">
+        </div>
+        <div id="p-browse-wrap"></div>
+      </div>
+
+      <div class="panel">
+        <h2>دسته‌بندی‌های کالا</h2>
+        <div class="inv-add-row" style="grid-template-columns:2fr auto;">
+          <div>
+            <label>دسته‌بندی جدید</label>
+            <input type="text" id="cat-name" placeholder="مثلا دریل و مته">
+          </div>
+          <div>
+            <button class="btn" id="cat-add-btn" style="width:100%;">افزودن دسته</button>
+          </div>
+        </div>
+        <div id="cat-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>
+        <div id="cat-manage-wrap" style="margin-top:14px;"></div>
+      </div>
+    </section>
+
+    <section class="view" data-view="invoice">
+      <div class="panel">
+        <h2>مشخصات فاکتور فروش</h2>
+        <div class="field-grid" style="grid-template-columns:1fr 1fr;">
+          <div>
+            <label>نام مشتری (اختیاری)</label>
+            <input type="text" id="inv-customer" placeholder="نام مشتری">
+          </div>
+          <div>
+            <label>تاریخ فاکتور</label>
+            <div class="date-picker" id="inv-date"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>افزودن کالا به فاکتور فروش</h2>
+        <div class="inv-add-row">
+          <div>
+            <label>کالا</label>
+            <div class="autocomplete-wrap">
+              <input type="text" id="inv-product-select" placeholder="تایپ کنید یا از لیست انتخاب کنید" autocomplete="off">
+              <div class="autocomplete-list" id="inv-product-suggestions"></div>
+            </div>
+          </div>
+          <div>
+            <label>قیمت واحد (تومان)</label>
+            <input type="number" id="inv-unit-price" min="0">
+          </div>
+          <div>
+            <label>تعداد</label>
+            <input type="number" id="inv-qty" min="1" value="1">
+          </div>
+          <div>
+            <button class="btn" id="inv-add-line-btn" style="width:100%;">افزودن</button>
+          </div>
+        </div>
+        <div id="inv-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>
+      </div>
+
+      <div class="panel">
+        <h2>اقلام فاکتور فروش</h2>
+        <div id="inv-lines-wrap"></div>
+        <div class="total-bar">
+          <span class="label">جمع کل فاکتور</span>
+          <span class="value num" id="inv-grand-total">۰ تومان</span>
+        </div>
+        <div class="row-actions">
+          <button class="btn secondary" id="inv-clear-btn">پاک کردن فرم</button>
+          <button class="btn" id="inv-save-btn">ثبت و صدور فاکتور فروش</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" data-view="purchase">
+      <div class="panel">
+        <h2>مشخصات فاکتور خرید</h2>
+        <div class="field-grid" style="grid-template-columns:1fr 1fr;">
+          <div>
+            <label>نام فروشنده/تامین‌کننده (اختیاری)</label>
+            <input type="text" id="pinv-supplier" placeholder="نام فروشنده">
+          </div>
+          <div>
+            <label>تاریخ فاکتور</label>
+            <div class="date-picker" id="pinv-date"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>افزودن کالا به فاکتور خرید</h2>
+        <div class="inv-add-row">
+          <div>
+            <label>کالا</label>
+            <div class="autocomplete-wrap">
+              <input type="text" id="pinv-product-select" placeholder="تایپ کنید یا از لیست انتخاب کنید" autocomplete="off">
+              <div class="autocomplete-list" id="pinv-product-suggestions"></div>
+            </div>
+          </div>
+          <div>
+            <label>قیمت واحد (تومان)</label>
+            <input type="number" id="pinv-unit-price" min="0">
+          </div>
+          <div>
+            <label>تعداد</label>
+            <input type="number" id="pinv-qty" min="1" value="1">
+          </div>
+          <div>
+            <button class="btn" id="pinv-add-line-btn" style="width:100%;">افزودن</button>
+          </div>
+        </div>
+        <div id="pinv-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>
+      </div>
+
+      <div class="panel">
+        <h2>اقلام فاکتور خرید</h2>
+        <div id="pinv-lines-wrap"></div>
+        <div class="total-bar">
+          <span class="label">جمع کل فاکتور</span>
+          <span class="value num" id="pinv-grand-total">۰ تومان</span>
+        </div>
+        <div class="row-actions">
+          <button class="btn secondary" id="pinv-clear-btn">پاک کردن فرم</button>
+          <button class="btn" id="pinv-save-btn">ثبت و صدور فاکتور خرید</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" data-view="invoices">
+      <div class="panel">
+        <h2>فاکتورهای صادر شده</h2>
+        <div id="invoices-list-wrap"></div>
+      </div>
+    </section>
+
+    <section class="view" data-view="report">
+      <div class="panel">
+        <h2>بازه گزارش‌گیری</h2>
+        <div class="field-grid" style="grid-template-columns:1fr 1fr;">
+          <div>
+            <label>از تاریخ</label>
+            <div class="date-picker" id="report-from-date"></div>
+          </div>
+          <div>
+            <label>تا تاریخ</label>
+            <div class="date-picker" id="report-to-date"></div>
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="btn" id="report-apply-btn">اعمال بازه</button>
+          <button class="btn secondary" id="report-clear-btn">نمایش کل بازه‌ها</button>
+        </div>
+        <div id="report-range-label" style="margin-top:10px;font-size:13px;color:var(--ink-soft);"></div>
+      </div>
+
+      <div class="panel">
+        <h2>گزارش کلی</h2>
+        <div class="metrics" id="report-metrics"></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div id="print-area"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   FIREBASE SETUP — REQUIRED BEFORE THIS APP WORKS
+   1. Go to https://console.firebase.google.com -> Create a project.
+   2. In the project, open "Build > Realtime Database" -> Create Database
+      (start in "locked mode" is fine, we set custom rules below).
+   3. In Project settings (gear icon) -> General -> "Your apps" -> Web app (</>),
+      register an app and copy the firebaseConfig object it gives you into
+      FIREBASE_CONFIG below.
+   4. Go to Realtime Database -> Rules, and paste (replace YOUR_SECRET_CODE
+      with the exact password you plan to share with your family — same
+      capitalization/characters as what you'll type in the app):
+      {
+        "rules": {
+          "shared": {
+            "$code": {
+              ".read": "$code === 'YOUR_SECRET_CODE'",
+              ".write": "$code === 'YOUR_SECRET_CODE'"
+            }
+          }
+        }
+      }
+   ===================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCpliQ1ozcQC25PiIIOZADoWwYa4KcT5lA",
+  authDomain: "hesabdari-833ff.firebaseapp.com",
+  databaseURL: "https://hesabdari-833ff-default-rtdb.firebaseio.com",
+  projectId: "hesabdari-833ff",
+  storageBucket: "hesabdari-833ff.firebasestorage.app",
+  messagingSenderId: "290726805740",
+  appId: "1:290726805740:web:d4c23ed83be6e89c9665c9"
+};
+const ACCESS_CODE_STORAGE_KEY = 'hesabdari-access-code';
+let accessCode = null;
+
+let invoices = [];
+let purchaseInvoices = [];
+let products = [];
+let categories = [];
+let invoiceSeq = 1;
+let purchaseSeq = 1;
+let invoiceLines = [];
+let purchaseInvoiceLines = [];
+let selectedCategoryId = null;
+let reportFrom = null;
+let reportTo = null;
+
+const DEFAULT_CATEGORIES = [
+  'دریل و مته','مینی فرز و صفحه','سایر ابزار برقی','انبرها','آچارها','پیچ گوشتی',
+  'ابزار باغبانی/کشاورزی','ابزار بنایی/ساختمانی','شیرآلات/تاسیساتی','ابزار نظافت',
+  'قفل و دستگیره و توپی','پیچ و رولپلاک','بست','چسب','دستکش/عینک/متر','متفرقه','وسایل برقی'
+];
+
+const BULK_SEED_PRODUCTS = {"دریل و مته": ["کیت دریل چکشی برقی رونیکس RS-0001", "کیت دریل چکشی برقی رونیکس RS-0005", "دریل بتن کن رونیکس 2725", "دریل بتن کن رونیکس 2726", "دریل چکشی رونیکس 2210", "دریل چکشی رونیکس c2210", "دریل چکشی رونیکس x2211", "دریل چکشی 1050 وات رونیکس 2221", "دریل چکشی رونیکس 2250", "دریل چکشی رونیکس k2250", "دریل شارژی 16 ولت دو باتری رونیکس 8615", "دریل شارژی 12 ولت تک باتری CE2 BIST", "دریل شارژی 12 ولت تک باتری CD-PAP", "دریل شارژی 12 ولت دو باتری المکس CD-222", "ست مته آهن سیلور GT-BT10", "ست مته الماسه سیلور GT-BM8", "مته چهار شیار FRED سایز 460×16", "مته چهار شیار FRED سایز 460×26", "مته 6 چهارشیار CUTTEX", "مته 7 چهارشیار CUTTEX", "مته 7 چهارشیار ROCK", "مته 7 الماسه FREUD", "مته 8 چهارشیار CUTTEX", "مته 8 FIX", "مته 8 BRIX", "مته 8 کوتاه UNIQUE", "مته 8 کبالت اصل", "مته 8 الماسه FREUD", "مته 10 چهارشیار CUTTEX", "مته 10 BROOKE", "مته 12 GREEN", "قلم چهار شیار"], "مینی فرز و صفحه": ["مینی فرز رونیکس 3100", "مینی فرز رونیکس K3100", "مینی فرز رونیکس 3110", "مینی فرز رونیکس N3110", "مینی فرز رونیکس 3111", "مینی فرز رونیکس 3120N", "مینی فرز رونیکس 3151", "مینی فرز رونیکس 3165", "فرز آهنگری صنعتی رونیکس 3210", "فرز سنگبری صنعتی رونیکس 3220", "فرز مینیاتوری رونیکس 3404", "صفحه استیل بر مینی (115mm) زیمبرگ", "صفحه استیل بر (180mm) زیمبرگ", "صفحه استیل بر مینی (115mm) اوسیس", "صفحه استیل بر (180mm) اوسیس", "صفحه گرانیت بر مینی (115mm) فرد", "صفحه گرانیت بر بزرگ (230mm) فرد", "صفحه پرسلان بر مینی (115mm) اکو", "صفحه پرسلان بر (180mm) اکو", "صفحه پرسلان بر مینی (115mm) ویپکس", "صفحه پرسلان بر (180mm) کینگ لیون", "صفحه ساب مینی (115mm) اوسیس", "صفحه ساب (180mm) اوسیس"], "سایر ابزار برقی": ["اینورتر (ترانس) جوشکاری مدل RH 4604", "سیم جوش 3 میکا (هر عدد)", "سیم جوش 3 میکا (کیلویی)", "سیم جوش 3 میکا (بسته ای)", "سیم جوش 4 میکا (هر عدد)", "سیم جوش 4 میکا (کیلویی)", "سیم جوش 4 میکا (بسته ای)", "شیشه ماسک ماموت (برای محافظ جوشکاری)", "پیستوله برقی (رنگپاش) رونیکس 1313", "بلوور (دمنده/ مکنده) صنعتی دیمردار رونیکس 1207", "بلوور (دمنده/ مکنده) صنعتی دیمردار ANCHOR", "اتو لوله سبز نوا 2415", "اتو لوله سبز نوا با متعلقات کامل 2417", "گازوئیل کش 12 ولت مدل OKBOONS", "گازوئیل کش 12 ولت مدل VNP", "گازوئیل کش 12 ولت مدل BMV"], "انبرها": ["جعبه ابزار کوچک 8 پارچه ویوارکس", "انبردست رونیکس 8 اینچ سری مکسی RH-1168", "انبردست رونیکس 8 اینچ سری اولترا RH-1178", "انبردست رونیکس 7 اینچ سری مکسی RH-1167", "انبردست دینجی 8 اینچ", "انبردست جیتک ۷ اینچ PLIERS", "دم باریک دینجی 8 اینچ", "دم باریک لکسون", "سیم چین رونیکس 6 اینچ RH-1266", "سیم چین دینجی 6 اینچ", "سیم چین لکسون", "انبر کلاغی اتوماتیک رونیکس 1430 RH", "انبر سیم لخت کن چند کاره رونیکس 1810 RH", "انبر سیم لخت کن اتوماتیک رونیکس 1820 RH", "انبرسیم لخت کن نوا اتومات 8060", "انبر قفلیDR VISE  ۱۰ اینچ (طرح اروین)", "انبر آرماتوربندی رونیکس 10 اینچ (250-99)  RH-1510", "انبر قیچی مفتول بر ایران پتک 600", "انبر کابل شو اپکس پرسی 7408", "خار بازکن/جمع کن نوا - ست ۴ عددی"], "آچارها": ["آچار فرانسه رونیکس لیبرا سایز 6 ( 2401 RH-)", "آچار فرانسه رونیکس لیبرا سایز 8 ( 2402 RH-)", "آچار فرانسه رونیکس لیبرا سایز 10 ( 2403 RH-)", "آچار فرانسه رونیکس لیبرا سایز 12 ( 2404 RH-)", "آچار فرانسه رونیکس لیبرا سایز 15 ( 2405 RH-)", "آچار فرانسه روکشدار رونیکس سایز 10 - 2442 RH-", "آچار فرانسه روکشدار رونیکس سایز 12 - 2443 RH-", "آچار فرانسه فورجد سایز 8", "آچار فرانسه هانتر سایز 10", "آچار فرانسه اکتیو سایز 10", "آچار فرانسه پیژن سایز 12", "آچار فرانسه بیسو سایز 12", "آچار شلاقی 1.5 اینچ RH 2515", "آچار شلاقی 2 اینچ RH 2520", "آچار شلاقی 3 اینچ RH 2530", "آچار بکس 10 سفید", "آچار بکس 10 سیاه", "آچار بکس 13 هیزان", "آچار بکس تکی بلند 13 هیزان", "آچار بکس 14 هیزان", "آچار بکس 17 هیزان", "آچار بکس 19 هیزان", "آچار جغجغه بکس LALAK", "جعبه بکس 12 پارچه 2/1 مشکی تات", "جعبه بکس 25 پارچه فشار قوی SOUKUW", "دسته بکس 2/1 ال 10 اینچ استیل اکبونس", "دسته رابط 2/1  -mm  125 دینچی/ اکبونس", "دسته رابط 2/1  -mm  250 دینچی/ اکبونس", "دسته گردان هندلی 2/1", "آچار چرخ چهارسر", "آچار چرخ 14 اکبونس", "آچار آلن تکی سایز 3", "آچار آلن تکی سایز 6 کوتاه", "آچار آلن تکی بلند سایز 8", "آچار آلن تکی سایز 10", "آچار آلن تکی سایز 14 ایرانی", "ست 9 تایی آچار آلن هنسان", "ست 9 تایی آچار آلن پیژن", "سری آچار آلن چاقویی رونیکس RH-2040", "سری آچار آلن چاقویی ستاره ای رونیکس RH-2041", "سری آچار آلن چاقویی دینجوی 17006", "آچار یکسر رینگ 10 سان تولز", "آچار یکسر رینگ 13 WORKPRO", "آچار یکسر رینگ 17 درجه یک یوفه", "آچار یکسر رینگ 24", "آچار یکسر رینگ 36 SKY", "آچار دو سر رینگ 12×10", "آچار دو سر رینگ 19×17", "آچار دو سر رینگ 19×18", "آچار دو سر رینگ 23×21 ) HT-252 (", "آچار مثلثی کوچک 12×10×8", "آچار مثلثی کوچک 13×11×9", "ست آچار 12 عددی آفیکس پلکانی", "ست آچار 12 عددی رایدر پلکانی", "ست آچار 12 عددی باس پلکانی", "ست آچار 12 عددی پیژن پلکانی", "ست آچار جغجغه رونیکس چپ گرد و راست گرد RH-2171"], "پیچ گوشتی": ["پیچ گوشتی توسن 150×8 ضربه‌ای", "پیچ گوشتی توسن 200×8 ضربه‌ای", "پیچ گوشتی توسن 150×6 ضربه‌ای", "پیچ گوشتی چهار سو ضربه خور 150×6 چینی", "پیچ گوشتی ضربه خور   SOUKOW( طرح نوا )", "پیچ گوشتی ضربه خور هاربور", "پیچ گوشتی ضربه خور ساتیمان دو سو", "پیچ گوشتی ضربه خور ساتیمان چهار سو", "پیچ گوشتی مچی", "پیچ گوشتی جغجغه ای رونیکس RH-2725", "ست 7 تایی پیچ گوشتی ضربه خور ساتیمان", "فازمتر بزرگ توسن T9-4110T", "فازمتردو طرفه رونیکس 2727- RH", "سر پیج گوشتی نوا یکسر 2 سو یکسر 4 سو 1106", "سر پیج گوشتی 5/6 اکو", "سر پیچ گوشتی رونیکس ست 9 عددی  RH-5454"], "ابزار باغبانی/کشاورزی": ["بیل شوکا اصل کره", "بیل شوکا طرح آلمان طلایی (ممتاز) ISO9002", "بیل 2 ورق کره گریزلیز", "بیل فیل نشان تبریز", "بیل همدان کابین استیل", "بیل پارویی شوکا سیاه", "بیل پارویی دامداری سامیار", "بیل پارویی قرمز بزرگ شوکا", "بیلچه کامل فلزی سبز ایرانی اردستان", "بیلچه مغنی (دارای دسته چوبی)", "دسته بیل چوب سفید بلند درجه 1", "دسته بیل زبان گنجشک درجه 1", "دسته بیل روسی درجه 1", "دسته بیل روسی", "دسته بیل مهردار اسالم", "دسته کلنگ سوپر روسی", "دسته کلنگ نقدی", "دسته کلنگ تک سر", "داس متوسط", "سنگ نفت اکو", "شن کش آبی", "شن کش میلگردی 4*16", "شنه (چهار شاخ) ترک درجه یک", "شنه (چهار شاخ) آهنی 7 شاخه", "اره موء", "اره 30 چوب", "اره 33 چوب", "اره 40 چوب", "قیچی باغبانی توسن TGS120X", "سمپاش دستی 2 لیتری kingjet", "آبپاش دوشی بیکو BS-4120", "آبپاش سه حالتهHUI YOUNG", "لوله آبیاری 16 میلیمتر 100 متری (هر متر)", "جوالدوز اعلاء", "نخ بسته بندی فدک کوچک", "نخ بسته بندی گوزل ابهر نارنجی (کیلویی)", "نخ بسته بندی ورامین بزرگ (کیلویی)", "طناب های زرد همگی (کیلویی)", "طناب بزرگتر (متری)", "طناب دوم از نظربزرگی (متری)", "طناب بسته بندی نازک", "طناب بسته بندی بزرگ", "گونی کاه 110×180 آبی (دانه ای)"], "ابزار بنایی/ساختمانی": ["استامبولی تهرانی بزرگ 54 (900 گرم)", "استامبولی 54 درجه یک سنگین (1 کیلوگرم)", "استامبولی فلزی (کمتر از 900 گرم)", "چکش دو شاخ 600 گرمی پارس کاوه", "چکش دو شاخ 500 گرمی رونیکس 4751", "تبر 600 گرمی نوا دسته فایبر", "کلنگ فولادی IP1800 اینچeben  (بدون دسته)", "کلنگ کوچک 600 گرمی  eben", "پتک تبر نقدی", "دسته پتک 60 سانتی", "تیشه بنایی با دسته", "ملاقه کوچک", "کمچه چوبی منزه", "تخته ماله شطرنجی رنگی", "هم تراز کاشی سفید", "هم تراز کاشی مشکی", "شیلنگ تراز (کیلویی)", "قرقره رنگ کوره ای نارنجی", "ناودانی بلند 65 سانتی", "درب بخاری 15 سانتی دومنظوره همدان", "درب بخاری 10 سانتی", "دریچه 20×20 آلومینیوم", "کاردک ۸ آزادی", "لیسه پلاستیکی جور", "مفتول سیاه نرم 1.5 میلیمتری میهن", "مفتول سیاه نرم 2.5 میلیمتری میهن", "قیف مشکی دسته دار", "پارو زرد پلاستیکی کوچک", "پارو قرمز گلچین بزرگ", "پارو قرمز الوند بزرگ", "پارو قرمز گلچین کوچک", "پارو قرمز الوند کوچک", "رینگ فرغون 2 نقدی", "لاستیک گلریز یاسا فرغون", "لاستیک گلدیس", "تیوپ فرغون ایران یاسا", "بلبرینگ فرغون خارجی", "بلبرینگ فرغون پیژن", "نردبان 3 پله رویال", "نردبان 4 پله رویال", "نردبان 5 پله رویال", "کش موتور 2 متر", "کش موتور 3 متر", "ریسمان کار 200 حجت", "ریسمان کار 300 معمارکار", "ریسمان کار 300 تابان", "ریسمان کار کد 400", "رنگ پلاستیکی", "رنگ سفید 1 کیلویی", "رنگ سفید ربع کیلویی", "رنگ کرم 1 کیلویی", "رنگ کرم ربع کیلویی", "رنگ طوسی 1 کیلویی", "رنگ طوسی ربع کیلویی", "اسپری رنگ (مشکی، آبی، قرمز)", "ضد زنگ طوسی جم", "ضد زنگ طوسی شاپرک", "ضد زنگ قرمز پارس", "ضد زنگ ربعی طوسی و قرمز", "تینر روغنی", "ابر", "قلم رنگ 5/1 اینچ واستر", "قلم رنگ 5/2 اینچ واستر", "قلم رنگ 5/1 اینچ آریا", "غلتک رنگ سایز 10", "غلتک رنگ سایز 15", "غلتک رنگ سایز 20", "اسکوپ پروانه ای بزرگ", "اسکوپ پروانه ای کوچک"], "شیرآلات/تاسیساتی": ["شیلنگ2/1پکیجی 30 سانت", "شیلنگ2/1 پکیجی 60 سانت", "شیلنگ شفاف سبک (سبز وآبی شفاف)", "شیلنگ شفاف 5 کیلویی نخ دار", "شیلنگ  پاییزان پلاست (نارنجی)", "شیلنگ کرج ممتاز(طرح ژاپن، نارنجی) و بهارستان البرز(زرد)", "شیلنگ بهارستان البرز (2.5 طرح ژاپن نارنچی)", "شیلنگ یاسا مشکی", "شیلنگ توالت پلاستیکی طرح مهر", "شیلنگ توالت فنری", "شیلنگ توالت آبشار", "شلنگ گاز سفید سنگین", "شلنگ گاز سفید سبک", "شیلنگ پیسوار حصیری درجه 1", "شیلنگ پیسوار", "سرشیلنگی2/1 کرم", "سرشیلنگی 2×2", "شیلنگ خور برنجی 10×3.4 گاز", "شیر پیسوار", "شیر پیسوار لباسشویی", "شیر حیاطی برنجی تندآب", "شیر حیاط دسته گازی 2/1 توسکا", "شیر نفتی دسته گازی فردوس", "شیر نفتی قفلی رفیع", "شیرشیلنگی سند پلاست تمام برنجی", "شیر دسته گازی2/1 آذین", "شیر کولر پویا", "شیرآب طرح ترک تمام پلاستیکی", "شیر پلاستیکی ترک با سری فلزی", "شیر توالت ندا آیسان کروم", "شیر روشویی ندا آیسان کروم", "شیر ظرفشویی ندا آیسان کروم", "دسته شیر اهرمی", "شیر صافی فیلتر دار 2 استارکو", "سه راهی شیردار گازی", "سه راهی ساده گاز", "پوسته مغزی آهنی", "پوسته مغزی پلاستیکی", "کفشور 10×10 پایه بلند", "کفشور 15*15 پایه بلند", "فشار شکن شیر ظرفشویی کوتاه طلایی", "فشار شکن شیر ظرفشویی بلند", "چاه بست دستشویی", "سیفون ظرفشویی تک لگن", "سیفون کششی 1.5 متری", "سیفون کششی 1 متری", "سیفون دو لگن جهانیار k-564", "سردوش 10 گرد", "سردوش 15 گرد", "واشر آب بندی بوتان", "واشر لاستیکی 2", "واشر لاستیکی 5/2 دوش", "نعلی دو پیچ", "قیچی لوله سبز میکا", "مغزی اهرمی(کارتریج) 40", "مغزی شیر مخلوط", "مغزی شیر حیاطی سنگین", "علمک فنری", "علمک عصایی بزرگ", "نوار تفلون", "رابط نوار تیپ"], "ابزار نظافت": ["جارو کاوراش کوچک ارج کد 501", "جارو 30 سانتی رویال", "جارو سالنی 30 سانتیمتری آفاق", "جارو سالنی 40 سانتیمتری بهروب", "جارو استخری کوچک رویال (زبر)", "جارو با دسته 40 سانتیمتری یاس", "جارو خاک انداز یاس", "جارو دستی 5 محور گلچین", "طی آب جمع کن ۴۰ سانتیمتری رویال تک لبه", "طی آب جمع کن دو لبه", "طی نخی 40 سانت پشت فلزی تک شویی محک", "طی نخی گرد افشانک میکرو فایبر ابونیک", "طی شیشه بزرگ ارج کد 181", "طی شیشه کوچک ارج کد 178", "فرچه فرش", "برس شستشوی توالت", "دسته جارو چوبی 120 سانتیمتری نولان روکشدار", "دسته طی 120 سانتیمتری فلزی گلچین رزوه سرخود", "دسته طی 120 سانتیمتری فلزی پیچ خور مخصوص طی نخی", "تیغ شیشه پاک کن دسته گرد مشکی", "پمپ تراکم", "فنر مشگل گشا 1 متری", "فنر مشگل گشا 60 سانتی", "فنر 3 متری", "فنر 4 متری", "فنر 8 متری", "مایع لوله بازکن محشر", "ماسک صورت"], "قفل و دستگیره و توپی": ["قفل ۳۸ طرح", "قفل ۳۸ توتال", "قفل ۵۰ طرح", "قفل 50 توتال", "قفل ۷۵ طرح", "قفل کتابی WORLD BALL", "قفل کتابی فولادی 90", "قفل کتابی 94 فولادی درجه یک - گوسام", "قفل حیاطی دو شیار ایساتیس بدون مقابله", "قفل حیاطی کلید کامپیوتری ایساتیس با مقابله", "قفل 5/2 سوئیچی نولان", "قفل 6.5 کلیدی دلتا", "قفل کمدی 808 تک پله", "دستگیره دلتا کلیدی", "دستگیره 2.5", "توپی 7 سانت دوشیار پیژن", "توپی 7 سانت دوشیار لوک", "توپی 7 سانت تانک", "توپی 7 سانت سویچی تافی(هانتر)", "توپی 7 سانت سویچی پرو رایدر(هانتر)"], "پیچ و رولپلاک": ["پیچ ۸ × 2/ 11 ایرانی (هر عدد)", "پیچ ۸ × 2 ایرانی (هر عدد)", "پیچ ۱۰ × 2/ 21 ایرانی (هر عدد)", "پیچ ۱۲ × 3 ایرانی (هر عدد)", "پیچ MDF چینی 2.5 سانت درجه 1 بسته 1000 عددی (هر عدد)", "پیچ MDF چینی 5 سانت درجه 1 بسته 500 عددی (هر عدد)", "پیچ استوانه ۲۵ × 4 (هر عدد)", "پیچ 25× 4.2 واشردار نوک مته (هر عدد)", "پیچ 32×4.2 واشردار نوک مته (هر عدد)", "پیچ 50×4.2 واشردار نوک مته (8*2) (هر عدد)", "پیچ سر تخت نوک مته 19*3.9 (هر عدد)", "پیچ سر تخت نوک مته 38*3.9 (هر عدد)", "پیچ شیروانی 4 سانتی چینی (هر عدد)", "رولپلاک ۴ یاسر (هر عدد)", "رولپلاک ۵ یاسر (هر عدد)", "رولپلاک 6 یاسر (هر عدد)", "رولپلاک ۷ یاسر (هر عدد)", "رولپلاک 6 سانتی متری بسته 50 عددی takplast (هر عدد)", "میخ فوادی 4 سانت (هر عدد)", "میخ پرچ 4 واشاردار", "میخ پرچ 5 واشار دار", "قلاب 95/5 ال", "قلاب پیچی 90/5", "چوب پیچ 14*4 چهارسو", "چوب پیچ 12*5/2"], "بست": ["بست فلزی 16× 10 گازی", "بست فلزی 19×13", "بست فلزی 25×18", "بست فلزی 42 × 25", "بست کمربندی 10 سفید", "بست کمربندی 15 سفید", "بست کمربندی 15 مشکی", "بست کمربندی 20 سفید", "بست کمربندی 20 مشکی", "بست کمربندی 25 سفید", "بست کمربندی 30 سفید", "بست کمربندی 37 سفید", "بست کمربندی 53 سفید", "بست سقفی معمولی", "بست دیواری معمولی", "بست سقفی طلایی", "بست روکا برای روشویی", "بست بکسل 14", "بست پایه طلایی تک"], "چسب": ["چسب کریستال تحریری نانو", "چسب پهن کریستال", "چسب کاغذی باریک اسپیدتاپ", "چسب پهن ایران فویل آلمینیوم ماتیسا", "چسب برق RABO", "چسب برق جک اسمیت", "چسب برق VOLGA", "چسب برق  سیاه و سفید", "چسب آهن رازی 50", "چسب رازی همه کاره 50", "چسب رازی همه کاره 100", "چسب تارگت 100", "چسب دوقلو غفاری", "چسب مزدا بزرگ غفاری", "چسب قطره ای 3 گرمی Sanafix", "چسب 3-2-1 بتا ترک", "چسب 3-2-1 مگا استار", "چسب آکواریوم کاسپین مشکی", "چسب آکواریوم کاسپین شفاف همه کاره", "چسپ آکواریوم سیلیکون غفاری تاپ پلاس", "دستگاه چسب کش ماتیسا", "تفنگ آکواریوم پلاستیک", "تفنگ آکواریوم فلزی"], "دستکش/عینک/متر": ["متر 3 فیسکو", "متر 5 روکش دار آومیر", "متر 5.5 روکش دار اکو", "متر 7.5 روکش دار پی وی سی رونیکس 9075", "متر 30 متری فایبر گلاس توتال", "متر 30 متری پارچه ای سان مکس", "عینک ایمنی دودی رونیکس RH-9023", "عینک ابری", "عینک جوشکاری درجه یک", "دستکش ارگونومیک نیتریل ابرش FL 1200", "دستکش ارگونومیک نیتریل ابرش FN 1300", "دستکش ارگونومیک چروک ابرشEN 1300", "دستکش نیتریل استادکار", "دستکش گیلان", "دستکش تیوبی سه لایه درجه یک", "دستکش سفید استارکاری", "دستکش طاها", "دستکش نیتریل ایکس", "کلاه کشاورزی", "کفش شهپر فرزاد سایز 41", "کفش شهپر فرزاد سایز 42", "چکمه سفید شیما"], "متفرقه": ["گونی جامبو 4 متر (کیلویی)", "گونی جامبو 4 متر (متر مربع)", "گونی جامبو 3 متر (کیلویی)", "گونی جامبو 3 متر (متر مربع)", "گونی الوان 4 متر (کیلویی)", "گونی الوان 4 متر (متر مربع)", "گونی الوان 3 متر (کیلویی)", "گونی الوان 3 متر (متر مربع)", "گونی آبی نما 3 متر (کیلویی)", "گونی آبی نما 3 متر (متر مربع)", "نایلون شناژ (کلی با توپ-کیلویی)", "نایلون شناژ(جزئی-کیلویی)", "نایلون سفید 4 متر (کیلویی)", "نایلون سفید 4 متر (متر مربع)", "زیرپایی (متری)", "نوار 8 سانتیمتری جاجیمی (متری)", "نوار خطر", "توری 100 گالوانیزه", "توری نسوز پنجره -80", "گونیای جوشکاری 20 زرد", "گونیای جوشکاری 30 زرد", "گونیا طاقچه ای سایز 3", "گونیا طاقچه ای سایز 4", "گونیا طاقچه ای سایز 6", "زنجیر 6 گالوانیزه 30 کیلویی (هر کیلو)", "ست پنچر گیری تمام فلز", "سر باتری", "دسته جغجغه", "پایه جغجغه وانتی", "پایه جغجغه خاوری (کامیونتی)", "تسمه جغجغه ای باربند کامیونی", "بکسل بلند برزنتی دو سر قلاب 3 تن", "بکسل دو سر قلاب 10 (500 گرم/نیم تن) لیون", "انبر اتصال بزرگ روکش دار", "کابل اتصال باطری به باطری 800 آمپر", "کابل اتصال ماشین 800 مسی", "قفل فرمان رونیکس 4243RH-", "مهارکش 12", "مهارکش 14", "قلاب کارابین", "هرزه گرد پیچ دار", "گردان 3 (حلقه برای بستن حیوانات)", "زنجیر فرمان 6 خارجی (برای بستن حیوانات)", "زنجیر 3 بند اسبی", "زنجیر گاو بند سایز 5", "سینه بند 2.5 ارتشی (برای بستن حیوانات)", "کشو میله 10 سانت", "گیره پرده پرتو فلزی (بسته)", "گیره پرده سوراخ دار (بسته)", "گریس پمپ توربو طرح شرایدر", "گریس پمپ رونیکس مدل RH-4303", "سرشیلنگ پمپ باد", "جک کابینت اکو", "روغن دان APPEX-4035", "برس سیمی", "چرخ 7.5 ثابت نارنجی", "چرخ 5 ثابت نارنجی", "چرخ بغل MDF", "چرخ صندلی اداری", "تلمبه دستی ورتکس", "شیلنگ تلمبه", "چراغ قوه پیشانی بند کلاسیک تندیس 2339", "چراغ قوه پیشانی تندیس 2340", "چراغ قوه پیشانی تندیس 2341", "منگنه کوب دستی رونیکس 4804 RH", "جعبه ابزار کاوه 303", "جعبه ابزار کاوه 402", "کیف ابزار کاوه ۱۰۲", "کیف ابزارکوچک", "تیزبر(کاتر) دسته ژله ای قرمز", "تیزبر(کاتر) سربی زرد", "سنباده مینی چسبی اکو", "سوهان آهن ساب FOX TECHPLUS", "تیغ اره اکو مستر اعلا", "تیغ شیشه پاک کن دسته گرد مشکی", "تیغ یدک ژاپن مشکی اکو", "تیغ یدک بزرگ 5/0 اکو", "تیغ یدک طرح کره ای", "فندک کوچک اتمی لوموس"], "وسایل برقی": ["سه راهی بدون سیم", "سه راهی صنعتی بدون سیم پارت برق ایرانیان", "سه راهی معمولی", "سه راهی صنعتی 1.8 متری", "سه راهی صنعتی 3 متری", "کلید و پریز جهان تومار", "دوشاخه صنعتی", "دوشاخه برقی چپقی", "دوشاخه کلید دار متین", "دوشاخه پیما الکتریک مدل آرمان", "پریز برق روکار بارانی (ارت دار)", "پریز برق ارت دار روکار", "لامپ 15 وات", "لامپ 20 وات", "لامپ 25 وات", "لامپ 30 وات", "گیره سوسماری کوچک", "اینارم اضافه کن"]};
+
+async function seedBulkProducts(){
+  let changed = false;
+  Object.keys(BULK_SEED_PRODUCTS).forEach(catName=>{
+    let cat = categories.find(c=>c.name === catName);
+    if(!cat){
+      cat = { id: uid(), name: catName };
+      categories.push(cat);
+      changed = true;
+    }
+    BULK_SEED_PRODUCTS[catName].forEach(name=>{
+      if(!products.some(p=>p.name === name)){
+        products.push({ id: uid(), name, price: 0, qty: 0, categoryId: cat.id, createdAt: Date.now() });
+        changed = true;
+      }
+    });
+  });
+  if(changed){
+    await saveCategories();
+    await saveProducts();
+  }
+}
+
+const fmtMoney = n => Math.round(n || 0).toLocaleString('fa-IR') + ' تومان';
+const fmtNum = n => Math.round(n || 0).toLocaleString('fa-IR');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+/* ---------- Jalali (Persian) calendar helpers ---------- */
+const PERSIAN_MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+const PERSIAN_DIGITS = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+const toPersianDigits = str => String(str).replace(/[0-9]/g, d => PERSIAN_DIGITS[d]);
+
+function div_(a,b){ return Math.floor(a/b); }
+function gregorianToJalali(gy, gm, gd){
+  const g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+  const gy2 = (gm > 2) ? (gy + 1) : gy;
+  let days = 355666 + (365*gy) + div_(gy2+3,4) - div_(gy2+99,100) + div_(gy2+399,400) + gd + g_d_m[gm-1];
+  let jy = -1595 + (33*div_(days,12053));
+  days %= 12053;
+  jy += 4*div_(days,1461);
+  days %= 1461;
+  if(days > 365){
+    jy += div_(days-1,365);
+    days = (days-1) % 365;
+  }
+  let jm, jd;
+  if(days < 186){
+    jm = 1 + div_(days,31);
+    jd = 1 + (days % 31);
+  } else {
+    jm = 7 + div_(days-186,30);
+    jd = 1 + ((days-186) % 30);
+  }
+  return [jy, jm, jd];
+}
+function isLeapJalaliYear(jy){
+  const cycle = (((jy - (jy > 0 ? 474 : 473)) % 2820) + 2820) % 2820 + 474;
+  return (((cycle + 38) * 682) % 2816) < 682;
+}
+function daysInJalaliMonth(jy, jm){
+  if(jm <= 6) return 31;
+  if(jm <= 11) return 30;
+  return isLeapJalaliYear(jy) ? 30 : 29;
+}
+function todayJalali(){
+  const now = new Date();
+  return gregorianToJalali(now.getFullYear(), now.getMonth()+1, now.getDate());
+}
+function buildDatePicker(prefix){
+  const container = document.getElementById(prefix);
+  const [jy] = todayJalali();
+  let yearOptions = '';
+  for(let y = jy - 6; y <= jy + 1; y++){
+    yearOptions += '<option value="'+y+'">'+toPersianDigits(y)+'</option>';
+  }
+  let monthOptions = '';
+  PERSIAN_MONTHS.forEach((m,i)=>{ monthOptions += '<option value="'+(i+1)+'">'+m+'</option>'; });
+  container.innerHTML =
+    '<select class="jp-day" aria-label="روز"></select>'
+    + '<select class="jp-month" aria-label="ماه">'+monthOptions+'</select>'
+    + '<select class="jp-year" aria-label="سال">'+yearOptions+'</select>';
+  const daySel = container.querySelector('.jp-day');
+  const monthSel = container.querySelector('.jp-month');
+  const yearSel = container.querySelector('.jp-year');
+  const refreshDays = () => {
+    const y = parseInt(yearSel.value,10), m = parseInt(monthSel.value,10);
+    const count = daysInJalaliMonth(y,m);
+    const prevDay = parseInt(daySel.value,10) || 1;
+    let dayOptions = '';
+    for(let d=1; d<=count; d++){ dayOptions += '<option value="'+d+'">'+toPersianDigits(d)+'</option>'; }
+    daySel.innerHTML = dayOptions;
+    daySel.value = Math.min(prevDay, count);
+  };
+  monthSel.addEventListener('change', refreshDays);
+  yearSel.addEventListener('change', refreshDays);
+  refreshDays();
+}
+function setDatePickerToday(prefix){
+  const [jy, jm, jd] = todayJalali();
+  const container = document.getElementById(prefix);
+  container.querySelector('.jp-year').value = jy;
+  container.querySelector('.jp-month').value = jm;
+  const daySel = container.querySelector('.jp-day');
+  const count = daysInJalaliMonth(jy,jm);
+  let dayOptions = '';
+  for(let d=1; d<=count; d++){ dayOptions += '<option value="'+d+'">'+toPersianDigits(d)+'</option>'; }
+  daySel.innerHTML = dayOptions;
+  daySel.value = jd;
+}
+function getDateValue(prefix){
+  const container = document.getElementById(prefix);
+  const y = container.querySelector('.jp-year').value;
+  const m = String(container.querySelector('.jp-month').value).padStart(2,'0');
+  const d = String(container.querySelector('.jp-day').value).padStart(2,'0');
+  return y+'/'+m+'/'+d;
+}
+function fmtDate(jalaliStr){
+  if(!jalaliStr) return '';
+  const parts = jalaliStr.split('/');
+  if(parts.length !== 3) return toPersianDigits(jalaliStr);
+  const [y,m,d] = parts;
+  const monthName = PERSIAN_MONTHS[parseInt(m,10)-1] || m;
+  return toPersianDigits(parseInt(d,10)) + ' ' + monthName + ' ' + toPersianDigits(y);
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function dbPath(key){ return 'shared/' + accessCode + '/' + key; }
+function dbRestUrl(key){
+  return FIREBASE_CONFIG.databaseURL.replace(/\/$/, '') + '/' + dbPath(key).split('/').map(encodeURIComponent).join('/') + '.json';
+}
+
+async function dbWrite(key, value){
+  try{
+    const res = await fetch(dbRestUrl(key), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(JSON.stringify(value)),
+      cache: 'no-store'
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+  }catch(e){
+    console.error('Firebase REST write failed:', e);
+    showToast('خطا در ذخیره‌سازی — اتصال اینترنت را بررسی کنید');
+  }
+}
+
+function applyRemoteValue(key, val){
+  switch(key){
+    case 'invoices': invoices = val || []; break;
+    case 'seq': invoiceSeq = val || 1; break;
+    case 'purchaseInvoices': purchaseInvoices = val || []; break;
+    case 'purchaseSeq': purchaseSeq = val || 1; break;
+    case 'products': products = val || []; break;
+    case 'categories':
+      if(val && val.length){ categories = val; }
+      else if(!categories || categories.length === 0){
+        categories = DEFAULT_CATEGORIES.map(name => ({ id: uid(), name }));
+        dbWrite('categories', categories);
+      }
+      break;
+  }
+}
+
+function refreshCurrentView(){
+  const activeBtn = document.querySelector('nav.tabs button.active');
+  const view = activeBtn ? activeBtn.dataset.view : 'products';
+  if(view === 'products'){ renderCategoryOptions(); renderCategoryManageList(); renderProductsBrowse(); }
+  if(view === 'invoices') renderInvoicesList();
+  if(view === 'report') renderReport();
+}
+
+/* One-time initial load, then keep listening for realtime changes from any device. */
+async function loadAll(){
+  const keys = ['invoices','seq','purchaseInvoices','purchaseSeq','products','categories'];
+
+  // First load uses Firebase's normal HTTPS REST API. This avoids making
+  // the initial screen depend on a WebSocket connection, which can fail on
+  // some mobile networks/browsers.
+  const results = await Promise.all(keys.map(async key => {
+    const res = await fetch(dbRestUrl(key), { cache: 'no-store' });
+    if(!res.ok) throw new Error('Firebase read HTTP '+res.status+' for '+key);
+    const raw = await res.json();
+    let val = null;
+    if(raw !== null){
+      try{ val = typeof raw === 'string' ? JSON.parse(raw) : raw; }catch(e){ val = null; }
+    }
+    return [key, val];
+  }));
+
+  results.forEach(([key, val]) => applyRemoteValue(key, val));
+
+  // Keep realtime synchronization when Firebase's realtime channel is available.
+  // Initial data is already loaded above, so a mobile WebSocket problem won't
+  // leave the login screen or app stuck forever.
+  keys.forEach(key=>{
+    firebase.database().ref(dbPath(key)).on('value', snap=>{
+      let val = null;
+      if(snap.exists()){
+        try{ val = JSON.parse(snap.val()); }catch(e){ val = null; }
+      }
+      applyRemoteValue(key, val);
+      refreshCurrentView();
+    }, err=>{
+      console.warn('Firebase realtime listener failed for '+key, err);
+    });
+  });
+}
+
+async function saveInvoices(){ await dbWrite('invoices', invoices); }
+async function saveSeq(){ await dbWrite('seq', invoiceSeq); }
+async function savePurchaseInvoices(){ await dbWrite('purchaseInvoices', purchaseInvoices); }
+async function savePurchaseSeq(){ await dbWrite('purchaseSeq', purchaseSeq); }
+async function saveProducts(){ await dbWrite('products', products); }
+async function saveCategories(){ await dbWrite('categories', categories); }
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ---------- Navigation ---------- */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.querySelector('.view[data-view="'+view+'"]').classList.add('active');
+    if(view === 'products') renderProductsBrowse();
+    if(view === 'invoice') populateProductSelect();
+    if(view === 'purchase') populatePurchaseProductSelect();
+    if(view === 'invoices') renderInvoicesList();
+    if(view === 'report') renderReport();
+  });
+});
+
+/* ---------- Helpers over products & invoices ---------- */
+function getProductNames(){
+  return products.map(p=>p.name).sort((a,b)=>a.localeCompare(b,'fa'));
+}
+function findProduct(name){
+  return products.find(p => p.name === name) || null;
+}
+function latestPurchasePriceFor(name){
+  let latest = null;
+  purchaseInvoices.forEach(inv=>{
+    inv.items.forEach(it=>{
+      if(it.name === name && (!latest || inv.createdAt > latest.createdAt)){
+        latest = { unitPrice: it.unitPrice, createdAt: inv.createdAt };
+      }
+    });
+  });
+  if(latest) return latest.unitPrice;
+  const product = findProduct(name);
+  return product ? product.price : 0;
+}
+function defaultSalePriceFor(name){
+  const product = findProduct(name);
+  if(product && product.price > 0) return product.price;
+  return 0;
+}
+async function registerProductIfNew(name, price){
+  if(findProduct(name)) return;
+  products.push({ id: uid(), name, price: price || 0, qty: 0, categoryId: '', createdAt: Date.now() });
+  await saveProducts();
+}
+async function adjustStockForInvoiceItems(items, direction){
+  // direction: +1 for purchase (stock increases), -1 for sale (stock decreases)
+  let warned = false;
+  items.forEach(it=>{
+    let product = findProduct(it.name);
+    if(!product){
+      product = { id: uid(), name: it.name, price: it.unitPrice || 0, qty: 0, categoryId: '', createdAt: Date.now() };
+      products.push(product);
+    }
+    if(typeof product.qty !== 'number') product.qty = 0;
+    product.qty += direction * it.qty;
+    if(direction < 0 && product.qty < 0 && !warned){
+      showToast('توجه: موجودی «'+it.name+'» منفی شد، به موجودی این کالا رسیدگی کنید.');
+      warned = true;
+    }
+  });
+  await saveProducts();
+}
+
+/* ---------- Product name autocomplete (typeable, suggests matches, allows new names) ---------- */
+function setupProductAutocomplete(inputId, listId, priceInputId, priceLookupFn){
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+
+  function renderList(){
+    const q = input.value.trim();
+    const names = getProductNames();
+    let matches = q ? names.filter(n => n.indexOf(q) === 0) : names;
+    if(q && matches.length === 0){
+      matches = names.filter(n => n.includes(q));
+    }
+    matches = matches.slice(0, 30);
+
+    let html = '';
+    if(matches.length === 0){
+      html += '<div class="autocomplete-empty">کالایی با این نام پیدا نشد</div>';
+    } else {
+      matches.forEach(n=>{
+        html += '<div class="autocomplete-item" data-name="'+escapeHtml(n)+'">'+escapeHtml(n)+'</div>';
+      });
+    }
+    if(q && !names.includes(q)){
+      html += '<div class="autocomplete-item autocomplete-new-hint" data-name="'+escapeHtml(q)+'">+ استفاده از «'+escapeHtml(q)+'» به‌عنوان کالای جدید</div>';
+    }
+    list.innerHTML = html;
+    list.classList.add('show');
+
+    list.querySelectorAll('[data-name]').forEach(el=>{
+      el.addEventListener('mousedown', (e)=>{
+        e.preventDefault();
+        input.value = el.dataset.name;
+        list.classList.remove('show');
+        const price = priceLookupFn(el.dataset.name);
+        document.getElementById(priceInputId).value = price || '';
+        input.focus();
+      });
+    });
+  }
+
+  input.addEventListener('focus', renderList);
+  input.addEventListener('input', renderList);
+  input.addEventListener('blur', ()=>{
+    const q = input.value.trim();
+    if(getProductNames().includes(q)){
+      document.getElementById(priceInputId).value = priceLookupFn(q) || '';
+    }
+    setTimeout(()=>list.classList.remove('show'), 150);
+  });
+}
+
+/* ---------- Categories ---------- */
+const ORPHAN_CATEGORY_ID = '__none__';
+let pendingDeleteCategoryId = null;
+
+function getCategoryById(id){
+  return categories.find(c => c.id === id) || null;
+}
+
+function renderCategoryOptions(){
+  const sel = document.getElementById('p-category');
+  if(categories.length === 0){
+    sel.innerHTML = '<option value="">ابتدا یک دسته‌بندی اضافه کنید</option>';
+    return;
+  }
+  const prev = sel.value;
+  sel.innerHTML = categories.map(c=>'<option value="'+c.id+'">'+escapeHtml(c.name)+'</option>').join('');
+  if(categories.some(c=>c.id === prev)) sel.value = prev;
+}
+
+function renderCategoryManageList(){
+  const wrap = document.getElementById('cat-manage-wrap');
+  if(categories.length === 0){
+    wrap.innerHTML = '<div class="empty">هنوز دسته‌بندی‌ای ثبت نشده است.</div>';
+    return;
+  }
+  let html = '';
+  categories.forEach(c=>{
+    const isConfirm = pendingDeleteCategoryId === c.id;
+    html += '<div class="cat-manage-row">'
+      + '<span class="cat-manage-name">'+escapeHtml(c.name)+'</span>'
+      + '<button class="btn small '+(isConfirm?'danger':'secondary')+'" data-del-cat="'+c.id+'">'+(isConfirm?'مطمئنید؟':'حذف')+'</button>'
+      + '</div>';
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('[data-del-cat]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.delCat;
+      if(pendingDeleteCategoryId === id){
+        categories = categories.filter(c=>c.id!==id);
+        pendingDeleteCategoryId = null;
+        await saveCategories();
+        renderCategoryManageList();
+        renderCategoryOptions();
+        if(selectedCategoryId === id) selectedCategoryId = null;
+        renderProductsBrowse();
+        showToast('دسته‌بندی حذف شد');
+      } else {
+        pendingDeleteCategoryId = id;
+        renderCategoryManageList();
+        setTimeout(()=>{
+          if(pendingDeleteCategoryId === id){
+            pendingDeleteCategoryId = null;
+            renderCategoryManageList();
+          }
+        }, 3000);
+      }
+    });
+  });
+}
+
+document.getElementById('cat-add-btn').addEventListener('click', async ()=>{
+  const name = document.getElementById('cat-name').value.trim();
+  const errEl = document.getElementById('cat-error');
+  if(!name){
+    errEl.textContent = 'لطفا نام دسته‌بندی را وارد کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(categories.some(c=>c.name === name)){
+    errEl.textContent = 'این دسته‌بندی قبلا ثبت شده است.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  categories.push({ id: uid(), name });
+  await saveCategories();
+  document.getElementById('cat-name').value = '';
+  renderCategoryManageList();
+  renderCategoryOptions();
+  renderProductsBrowse();
+  showToast('دسته‌بندی اضافه شد');
+});
+
+/* ---------- Products (catalog) ---------- */
+let pendingDeleteProductId = null;
+
+function categoryCounts(){
+  const counts = {};
+  categories.forEach(c => counts[c.id] = 0);
+  let orphan = 0;
+  products.forEach(p=>{
+    if(p.categoryId && counts.hasOwnProperty(p.categoryId)) counts[p.categoryId]++;
+    else orphan++;
+  });
+  return { counts, orphan };
+}
+
+function renderProductsBrowse(){
+  const wrap = document.getElementById('p-browse-wrap');
+  const q = (document.getElementById('p-search').value || '').trim();
+
+  if(q){
+    renderProductsListInto(wrap, products.filter(p => p.name.includes(q)), { searchMode: true });
+    return;
+  }
+  if(selectedCategoryId === null){
+    renderCategoryGrid(wrap);
+    return;
+  }
+  const isOrphan = selectedCategoryId === ORPHAN_CATEGORY_ID;
+  const cat = isOrphan ? null : getCategoryById(selectedCategoryId);
+  if(!isOrphan && !cat){
+    selectedCategoryId = null;
+    renderCategoryGrid(wrap);
+    return;
+  }
+  const list = isOrphan
+    ? products.filter(p => !p.categoryId || !getCategoryById(p.categoryId))
+    : products.filter(p => p.categoryId === selectedCategoryId);
+  renderProductsListInto(wrap, list, { searchMode: false, title: isOrphan ? 'بدون دسته‌بندی' : cat.name });
+}
+
+function renderCategoryGrid(wrap){
+  const { counts, orphan } = categoryCounts();
+  if(categories.length === 0 && orphan === 0){
+    wrap.innerHTML = '<div class="empty">ابتدا یک دسته‌بندی و سپس کالا اضافه کنید.</div>';
+    return;
+  }
+  let html = '<div class="category-grid">';
+  categories.forEach(c=>{
+    html += '<button type="button" class="category-card" data-open-cat="'+c.id+'">'
+      + '<span class="cat-name">'+escapeHtml(c.name)+'</span>'
+      + '<span class="cat-count">'+fmtNum(counts[c.id]||0)+' کالا</span>'
+      + '</button>';
+  });
+  if(orphan > 0){
+    html += '<button type="button" class="category-card" data-open-cat="'+ORPHAN_CATEGORY_ID+'">'
+      + '<span class="cat-name">بدون دسته‌بندی</span>'
+      + '<span class="cat-count">'+fmtNum(orphan)+' کالا</span>'
+      + '</button>';
+  }
+  html += '</div>';
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('[data-open-cat]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      selectedCategoryId = btn.dataset.openCat;
+      renderProductsBrowse();
+    });
+  });
+}
+
+function renderProductsListInto(wrap, list, opts){
+  const searchMode = !!opts.searchMode;
+  let headerHtml = '';
+  if(!searchMode){
+    headerHtml = '<div class="browse-header"><h3>'+escapeHtml(opts.title||'')+'</h3>'
+      + '<button class="btn small secondary" id="p-back-btn">بازگشت به دسته‌بندی‌ها</button></div>';
+  }
+  if(list.length === 0){
+    wrap.innerHTML = headerHtml + '<div class="empty">'+(searchMode ? 'کالایی با این نام پیدا نشد.' : 'کالایی در این دسته ثبت نشده است.')+'</div>';
+    wireBackButton(wrap);
+    return;
+  }
+  const sorted = [...list].sort((a,b)=>a.name.localeCompare(b.name,'fa'));
+  let html = headerHtml + '<table><thead><tr><th>نام کالا</th>'
+    + (searchMode ? '<th>دسته‌بندی</th>' : '') + '<th>قیمت</th><th>موجودی</th><th></th></tr></thead><tbody>';
+  sorted.forEach(p=>{
+    const isConfirm = pendingDeleteProductId === p.id;
+    let catName = '';
+    if(searchMode){
+      const cat = getCategoryById(p.categoryId);
+      catName = cat ? cat.name : 'بدون دسته‌بندی';
+    }
+    const qty = typeof p.qty === 'number' ? p.qty : 0;
+    const qtyClass = qty < 0 ? 'profit-neg' : '';
+    html += '<tr>'
+      + '<td data-name-cell="'+p.id+'">'+escapeHtml(p.name)+'</td>'
+      + (searchMode ? '<td>'+escapeHtml(catName)+'</td>' : '')
+      + '<td class="num money editable" data-edit-price="'+p.id+'">'+fmtMoney(p.price)+'</td>'
+      + '<td class="num editable '+qtyClass+'" data-edit-qty="'+p.id+'">'+fmtNum(qty)+'</td>'
+      + '<td style="display:flex;gap:6px;justify-content:flex-end;">'
+      + '<button class="btn small secondary" data-edit-btn="'+p.id+'">ویرایش</button>'
+      + '<button class="btn small '+(isConfirm?'danger':'secondary')+'" data-del-product="'+p.id+'">'+(isConfirm?'مطمئنید؟':'حذف')+'</button>'
+      + '</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+  wireBackButton(wrap);
+
+  const startEdit = (id, opts) => {
+    opts = opts || {};
+    const priceCell = wrap.querySelector('[data-edit-price="'+id+'"]');
+    const qtyCell = wrap.querySelector('[data-edit-qty="'+id+'"]');
+    const nameCell = opts.editName ? wrap.querySelector('[data-name-cell="'+id+'"]') : null;
+    const prod = products.find(x=>x.id===id);
+    if(!priceCell || !qtyCell || !prod) return;
+
+    if(nameCell){
+      nameCell.innerHTML = '<input type="text" class="edit-input" value="'+escapeHtml(prod.name)+'">';
+    }
+    priceCell.innerHTML = '<input type="number" class="edit-input" min="0" value="'+prod.price+'">';
+    qtyCell.innerHTML = '<input type="number" class="edit-input" step="1" value="'+(typeof prod.qty === 'number' ? prod.qty : 0)+'">';
+
+    const nameInput = nameCell ? nameCell.querySelector('input') : null;
+    const priceInput = priceCell.querySelector('input');
+    const qtyInput = qtyCell.querySelector('input');
+    (nameInput || priceInput).focus();
+    (nameInput || priceInput).select();
+
+    let committed = false;
+    const commit = async () => {
+      if(committed) return;
+      committed = true;
+      let changed = false;
+
+      if(nameInput){
+        const newName = nameInput.value.trim();
+        if(!newName){
+          showToast('نام کالا نمی‌تواند خالی باشد.');
+        } else if(newName !== prod.name){
+          if(products.some(p=>p.id !== prod.id && p.name === newName)){
+            showToast('کالایی با این نام قبلا ثبت شده است.');
+          } else {
+            prod.name = newName;
+            changed = true;
+          }
+        }
+      }
+
+      const val = parseFloat(priceInput.value);
+      if(!isNaN(val) && val >= 0 && val !== prod.price){
+        prod.price = val;
+        changed = true;
+      }
+
+      const qtyVal = parseFloat(qtyInput.value);
+      const prevQty = typeof prod.qty === 'number' ? prod.qty : 0;
+      if(!isNaN(qtyVal) && qtyVal !== prevQty){
+        prod.qty = qtyVal;
+        changed = true;
+      }
+
+      if(changed){
+        await saveProducts();
+        showToast('کالا به‌روزرسانی شد');
+      }
+      renderProductsBrowse();
+    };
+    const cancel = () => { committed = true; renderProductsBrowse(); };
+
+    const handleBlur = () => {
+      setTimeout(()=>{
+        const active = document.activeElement;
+        if(active === nameInput || active === priceInput || active === qtyInput) return;
+        commit();
+      }, 0);
+    };
+    const handleKeydown = e => {
+      if(e.key === 'Enter') commit();
+      if(e.key === 'Escape') cancel();
+    };
+
+    if(nameInput){
+      nameInput.addEventListener('blur', handleBlur);
+      nameInput.addEventListener('keydown', handleKeydown);
+    }
+    priceInput.addEventListener('blur', handleBlur);
+    priceInput.addEventListener('keydown', handleKeydown);
+    qtyInput.addEventListener('blur', handleBlur);
+    qtyInput.addEventListener('keydown', handleKeydown);
+  };
+
+  wrap.querySelectorAll('[data-edit-price]').forEach(cell=>{
+    cell.addEventListener('click', ()=> startEdit(cell.dataset.editPrice));
+  });
+  wrap.querySelectorAll('[data-edit-qty]').forEach(cell=>{
+    cell.addEventListener('click', ()=> startEdit(cell.dataset.editQty));
+  });
+  wrap.querySelectorAll('[data-edit-btn]').forEach(btn=>{
+    btn.addEventListener('click', ()=> startEdit(btn.dataset.editBtn, { editName: true }));
+  });
+
+  wrap.querySelectorAll('[data-del-product]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.delProduct;
+      if(pendingDeleteProductId === id){
+        products = products.filter(p=>p.id!==id);
+        pendingDeleteProductId = null;
+        await saveProducts();
+        renderProductsBrowse();
+        showToast('کالا حذف شد');
+      } else {
+        pendingDeleteProductId = id;
+        renderProductsBrowse();
+        setTimeout(()=>{
+          if(pendingDeleteProductId === id){
+            pendingDeleteProductId = null;
+            renderProductsBrowse();
+          }
+        }, 3000);
+      }
+    });
+  });
+}
+
+function wireBackButton(wrap){
+  const btn = wrap.querySelector('#p-back-btn');
+  if(btn) btn.addEventListener('click', ()=>{ selectedCategoryId = null; renderProductsBrowse(); });
+}
+
+document.getElementById('p-search').addEventListener('input', renderProductsBrowse);
+
+document.getElementById('p-add-btn').addEventListener('click', async ()=>{
+  const name = document.getElementById('p-name').value.trim();
+  const price = parseFloat(document.getElementById('p-price').value) || 0;
+  const qty = parseFloat(document.getElementById('p-qty').value) || 0;
+  const categoryId = document.getElementById('p-category').value;
+  const errEl = document.getElementById('p-error');
+
+  if(categories.length === 0){
+    errEl.textContent = 'ابتدا یک دسته‌بندی از بخش بالا اضافه کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(!name){
+    errEl.textContent = 'لطفا نام کالا را وارد کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(!categoryId){
+    errEl.textContent = 'لطفا یک دسته‌بندی برای کالا انتخاب کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(products.some(p=>p.name === name)){
+    errEl.textContent = 'کالایی با این نام قبلا ثبت شده است. برای تغییر قیمت از دکمه ویرایش در جدول استفاده کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  products.push({ id: uid(), name, price, qty, categoryId, createdAt: Date.now() });
+  await saveProducts();
+
+  document.getElementById('p-name').value = '';
+  document.getElementById('p-price').value = '';
+  document.getElementById('p-qty').value = '';
+
+  renderProductsBrowse();
+  showToast('کالا اضافه شد');
+});
+
+/* ---------- Invoice creation (sales) ---------- */
+function populateProductSelect(){
+  const name = document.getElementById('inv-product-select').value.trim();
+  document.getElementById('inv-unit-price').value = name ? (defaultSalePriceFor(name) || '') : '';
+}
+
+document.getElementById('inv-add-line-btn').addEventListener('click', async ()=>{
+  const input = document.getElementById('inv-product-select');
+  const name = input.value.trim();
+  const unitPrice = parseFloat(document.getElementById('inv-unit-price').value);
+  const qty = parseInt(document.getElementById('inv-qty').value, 10);
+  const errEl = document.getElementById('inv-error');
+
+  if(!name){
+    errEl.textContent = 'نام کالا را وارد کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(isNaN(unitPrice) || unitPrice < 0 || isNaN(qty) || qty < 1){
+    errEl.textContent = 'قیمت واحد و تعداد را به‌درستی وارد کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  await registerProductIfNew(name, unitPrice);
+
+  invoiceLines.push({
+    lineId: uid(),
+    name,
+    unitPrice,
+    costPrice: latestPurchasePriceFor(name),
+    qty
+  });
+
+  input.value = '';
+  document.getElementById('inv-unit-price').value = '';
+  document.getElementById('inv-qty').value = 1;
+  renderInvoiceLines();
+});
+
+function renderInvoiceLines(){
+  const wrap = document.getElementById('inv-lines-wrap');
+  if(invoiceLines.length === 0){
+    wrap.innerHTML = '<div class="empty">هنوز کالایی به فاکتور اضافه نشده است.</div>';
+  } else {
+    let html = '<table><thead><tr><th>نام کالا</th><th>قیمت واحد</th><th>تعداد</th><th>جمع</th><th></th></tr></thead><tbody>';
+    invoiceLines.forEach(line=>{
+      html += '<tr>'
+        + '<td>'+escapeHtml(line.name)+'</td>'
+        + '<td class="num money">'+fmtMoney(line.unitPrice)+'</td>'
+        + '<td class="num">'+fmtNum(line.qty)+'</td>'
+        + '<td class="num money">'+fmtMoney(line.unitPrice*line.qty)+'</td>'
+        + '<td><button class="btn small danger" data-del-line="'+line.lineId+'">حذف</button></td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('[data-del-line]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        invoiceLines = invoiceLines.filter(l=>l.lineId!==btn.dataset.delLine);
+        renderInvoiceLines();
+      });
+    });
+  }
+  const total = invoiceLines.reduce((s,l)=>s+l.unitPrice*l.qty, 0);
+  document.getElementById('inv-grand-total').textContent = fmtMoney(total);
+}
+
+document.getElementById('inv-clear-btn').addEventListener('click', ()=>{
+  invoiceLines = [];
+  document.getElementById('inv-customer').value = '';
+  setDatePickerToday('inv-date');
+  renderInvoiceLines();
+});
+
+document.getElementById('inv-save-btn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('inv-error');
+  if(invoiceLines.length === 0){
+    errEl.textContent = 'حداقل یک کالا به فاکتور اضافه کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const customer = document.getElementById('inv-customer').value.trim();
+  const date = getDateValue('inv-date');
+  const total = invoiceLines.reduce((s,l)=>s+l.unitPrice*l.qty, 0);
+
+  const invoice = {
+    id: uid(),
+    number: invoiceSeq,
+    customer: customer || 'مشتری نقدی',
+    date,
+    items: invoiceLines.map(l=>({name:l.name, unitPrice:l.unitPrice, costPrice:l.costPrice, qty:l.qty})),
+    total,
+    createdAt: Date.now()
+  };
+  invoices.push(invoice);
+  invoiceSeq += 1;
+  await saveInvoices();
+  await saveSeq();
+  await adjustStockForInvoiceItems(invoice.items, -1);
+
+  showToast('فاکتور شماره '+fmtNum(invoice.number)+' ثبت شد');
+  printInvoice(invoice);
+
+  invoiceLines = [];
+  document.getElementById('inv-customer').value = '';
+  setDatePickerToday('inv-date');
+  renderInvoiceLines();
+});
+
+/* ---------- Invoice creation (purchase) ---------- */
+function populatePurchaseProductSelect(){
+  const name = document.getElementById('pinv-product-select').value.trim();
+  document.getElementById('pinv-unit-price').value = name ? (latestPurchasePriceFor(name) || '') : '';
+}
+
+document.getElementById('pinv-add-line-btn').addEventListener('click', async ()=>{
+  const input = document.getElementById('pinv-product-select');
+  const name = input.value.trim();
+  const unitPrice = parseFloat(document.getElementById('pinv-unit-price').value);
+  const qty = parseInt(document.getElementById('pinv-qty').value, 10);
+  const errEl = document.getElementById('pinv-error');
+
+  if(!name){
+    errEl.textContent = 'نام کالا را وارد کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(isNaN(unitPrice) || unitPrice < 0 || isNaN(qty) || qty < 1){
+    errEl.textContent = 'قیمت واحد و تعداد را به‌درستی وارد کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  await registerProductIfNew(name, unitPrice);
+
+  purchaseInvoiceLines.push({
+    lineId: uid(),
+    name,
+    unitPrice,
+    qty
+  });
+
+  input.value = '';
+  document.getElementById('pinv-unit-price').value = '';
+  document.getElementById('pinv-qty').value = 1;
+  renderPurchaseInvoiceLines();
+});
+
+function renderPurchaseInvoiceLines(){
+  const wrap = document.getElementById('pinv-lines-wrap');
+  if(purchaseInvoiceLines.length === 0){
+    wrap.innerHTML = '<div class="empty">هنوز کالایی به فاکتور اضافه نشده است.</div>';
+  } else {
+    let html = '<table><thead><tr><th>نام کالا</th><th>قیمت واحد</th><th>تعداد</th><th>جمع</th><th></th></tr></thead><tbody>';
+    purchaseInvoiceLines.forEach(line=>{
+      html += '<tr>'
+        + '<td>'+escapeHtml(line.name)+'</td>'
+        + '<td class="num money">'+fmtMoney(line.unitPrice)+'</td>'
+        + '<td class="num">'+fmtNum(line.qty)+'</td>'
+        + '<td class="num money">'+fmtMoney(line.unitPrice*line.qty)+'</td>'
+        + '<td><button class="btn small danger" data-del-pline="'+line.lineId+'">حذف</button></td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('[data-del-pline]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        purchaseInvoiceLines = purchaseInvoiceLines.filter(l=>l.lineId!==btn.dataset.delPline);
+        renderPurchaseInvoiceLines();
+      });
+    });
+  }
+  const total = purchaseInvoiceLines.reduce((s,l)=>s+l.unitPrice*l.qty, 0);
+  document.getElementById('pinv-grand-total').textContent = fmtMoney(total);
+}
+
+document.getElementById('pinv-clear-btn').addEventListener('click', ()=>{
+  purchaseInvoiceLines = [];
+  document.getElementById('pinv-supplier').value = '';
+  setDatePickerToday('pinv-date');
+  renderPurchaseInvoiceLines();
+});
+
+document.getElementById('pinv-save-btn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('pinv-error');
+  if(purchaseInvoiceLines.length === 0){
+    errEl.textContent = 'حداقل یک کالا به فاکتور اضافه کنید.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const supplier = document.getElementById('pinv-supplier').value.trim();
+  const date = getDateValue('pinv-date');
+  const total = purchaseInvoiceLines.reduce((s,l)=>s+l.unitPrice*l.qty, 0);
+
+  const invoice = {
+    id: uid(),
+    number: purchaseSeq,
+    supplier: supplier || 'فروشنده نامشخص',
+    date,
+    items: purchaseInvoiceLines.map(l=>({name:l.name, unitPrice:l.unitPrice, qty:l.qty})),
+    total,
+    createdAt: Date.now()
+  };
+  purchaseInvoices.push(invoice);
+  purchaseSeq += 1;
+  await savePurchaseInvoices();
+  await savePurchaseSeq();
+  await adjustStockForInvoiceItems(invoice.items, 1);
+
+  showToast('فاکتور خرید شماره '+fmtNum(invoice.number)+' ثبت شد');
+  printPurchaseInvoice(invoice);
+
+  purchaseInvoiceLines = [];
+  document.getElementById('pinv-supplier').value = '';
+  setDatePickerToday('pinv-date');
+  renderPurchaseInvoiceLines();
+});
+
+/* ---------- Invoices list ---------- */
+function renderInvoicesList(){
+  const wrap = document.getElementById('invoices-list-wrap');
+  const combined = [
+    ...invoices.map(inv=>({ ...inv, kind:'sale' })),
+    ...purchaseInvoices.map(inv=>({ ...inv, kind:'purchase' }))
+  ];
+  if(combined.length === 0){
+    wrap.innerHTML = '<div class="empty">هنوز هیچ فاکتوری صادر نشده است.</div>';
+    return;
+  }
+  const sorted = combined.sort((a,b)=>b.createdAt - a.createdAt);
+  let html = '';
+  sorted.forEach(inv=>{
+    const badge = inv.kind === 'sale'
+      ? '<span class="type-badge sell">فروش</span>'
+      : '<span class="type-badge buy">خرید</span>';
+    const party = inv.kind === 'sale' ? inv.customer : inv.supplier;
+    html += '<div class="invoice-list-item">'
+      + '<div><span class="num-badge">'+badge+' فاکتور #'+fmtNum(inv.number)+'</span>'
+      + '<div class="meta">'+escapeHtml(party)+' &middot; '+fmtDate(inv.date)+'</div></div>'
+      + '<div style="display:flex;align-items:center;gap:14px;">'
+      + '<span class="money num">'+fmtMoney(inv.total)+'</span>'
+      + '<button class="btn small secondary" data-view-invoice="'+inv.id+'" data-kind="'+inv.kind+'">مشاهده و چاپ</button>'
+      + '</div></div>';
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('[data-view-invoice]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const kind = btn.dataset.kind;
+      if(kind === 'sale'){
+        const inv = invoices.find(i=>i.id===btn.dataset.viewInvoice);
+        if(inv) printInvoice(inv);
+      } else {
+        const inv = purchaseInvoices.find(i=>i.id===btn.dataset.viewInvoice);
+        if(inv) printPurchaseInvoice(inv);
+      }
+    });
+  });
+}
+
+function printInvoice(inv){
+  const area = document.getElementById('print-area');
+  let rows = '';
+  inv.items.forEach(it=>{
+    rows += '<tr><td>'+escapeHtml(it.name)+'</td><td class="num">'+fmtMoney(it.unitPrice)+'</td><td class="num">'+fmtNum(it.qty)+'</td><td class="num">'+fmtMoney(it.unitPrice*it.qty)+'</td></tr>';
+  });
+  area.innerHTML =
+    '<div class="print-header"><div><h2>دفتر</h2><div>فاکتور فروش</div></div>'
+    + '<div style="text-align:left;">'
+    + '<div>شماره فاکتور: '+fmtNum(inv.number)+'</div>'
+    + '<div>تاریخ: '+fmtDate(inv.date)+'</div>'
+    + '<div>مشتری: '+escapeHtml(inv.customer)+'</div>'
+    + '</div></div>'
+    + '<table class="print-table"><thead><tr><th>نام کالا</th><th>قیمت واحد</th><th>تعداد</th><th>جمع</th></tr></thead><tbody>'
+    + rows + '</tbody></table>'
+    + '<div class="print-total">جمع کل: '+fmtMoney(inv.total)+'</div>';
+  window.print();
+}
+
+function printPurchaseInvoice(inv){
+  const area = document.getElementById('print-area');
+  let rows = '';
+  inv.items.forEach(it=>{
+    rows += '<tr><td>'+escapeHtml(it.name)+'</td><td class="num">'+fmtMoney(it.unitPrice)+'</td><td class="num">'+fmtNum(it.qty)+'</td><td class="num">'+fmtMoney(it.unitPrice*it.qty)+'</td></tr>';
+  });
+  area.innerHTML =
+    '<div class="print-header"><div><h2>دفتر</h2><div>فاکتور خرید</div></div>'
+    + '<div style="text-align:left;">'
+    + '<div>شماره فاکتور: '+fmtNum(inv.number)+'</div>'
+    + '<div>تاریخ: '+fmtDate(inv.date)+'</div>'
+    + '<div>فروشنده: '+escapeHtml(inv.supplier)+'</div>'
+    + '</div></div>'
+    + '<table class="print-table"><thead><tr><th>نام کالا</th><th>قیمت واحد</th><th>تعداد</th><th>جمع</th></tr></thead><tbody>'
+    + rows + '</tbody></table>'
+    + '<div class="print-total">جمع کل: '+fmtMoney(inv.total)+'</div>';
+  window.print();
+}
+
+/* ---------- Report ---------- */
+function renderReport(){
+  const wrap = document.getElementById('report-metrics');
+  const labelEl = document.getElementById('report-range-label');
+
+  const inRange = (date) => (!reportFrom || date >= reportFrom) && (!reportTo || date <= reportTo);
+
+  const filteredSales = invoices.filter(i=>inRange(i.date));
+  const filteredPurchases = purchaseInvoices.filter(i=>inRange(i.date));
+
+  const invoiceRevenue = filteredSales.reduce((s,i)=>s+i.total, 0);
+  const invoiceCost = filteredSales.reduce((s,i)=>s + i.items.reduce((ss,it)=>ss + it.costPrice*it.qty, 0), 0);
+  const realProfit = invoiceRevenue - invoiceCost;
+  const purchaseTotal = filteredPurchases.reduce((s,i)=>s+i.total, 0);
+
+  if(reportFrom || reportTo){
+    labelEl.textContent = 'بازه انتخاب‌شده: از ' + (reportFrom ? fmtDate(reportFrom) : 'ابتدا') + ' تا ' + (reportTo ? fmtDate(reportTo) : 'انتها');
+  } else {
+    labelEl.textContent = 'در حال نمایش گزارش کل بازه‌ها';
+  }
+
+  const metrics = [
+    { label: 'تعداد کالاهای متمایز', value: fmtNum(getProductNames().length) },
+    { label: 'تعداد فاکتورهای فروش', value: fmtNum(filteredSales.length) },
+    { label: 'مجموع فروش', value: fmtMoney(invoiceRevenue) },
+    { label: 'تعداد فاکتورهای خرید', value: fmtNum(filteredPurchases.length) },
+    { label: 'مجموع خرید', value: fmtMoney(purchaseTotal) },
+    { label: 'سود فاکتورهای فروش (فروش منهای بهای خرید کالا)', value: fmtMoney(realProfit), accent:true },
+  ];
+  wrap.innerHTML = metrics.map(m=>
+    '<div class="metric"><div class="label">'+m.label+'</div><div class="value'+(m.accent?' accent':'')+' num">'+m.value+'</div></div>'
+  ).join('');
+}
+
+document.getElementById('report-apply-btn').addEventListener('click', ()=>{
+  reportFrom = getDateValue('report-from-date');
+  reportTo = getDateValue('report-to-date');
+  renderReport();
+});
+document.getElementById('report-clear-btn').addEventListener('click', ()=>{
+  reportFrom = null;
+  reportTo = null;
+  renderReport();
+});
+
+/* ---------- Init ---------- */
+async function startApp(){
+  buildDatePicker('inv-date');
+  buildDatePicker('pinv-date');
+  buildDatePicker('report-from-date');
+  buildDatePicker('report-to-date');
+  setDatePickerToday('inv-date');
+  setDatePickerToday('pinv-date');
+  setDatePickerToday('report-from-date');
+  setDatePickerToday('report-to-date');
+
+  await loadAll();
+  await seedBulkProducts();
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('views').style.display = 'block';
+
+  renderCategoryOptions();
+  renderCategoryManageList();
+  renderProductsBrowse();
+  setupProductAutocomplete('inv-product-select', 'inv-product-suggestions', 'inv-unit-price', defaultSalePriceFor);
+  setupProductAutocomplete('pinv-product-select', 'pinv-product-suggestions', 'pinv-unit-price', latestPurchasePriceFor);
+  populateProductSelect();
+  populatePurchaseProductSelect();
+  renderInvoiceLines();
+  renderPurchaseInvoiceLines();
+}
+
+/* ---------- Shared-password gate ---------- */
+function sanitizeAccessCode(raw){
+  return (raw || '').trim().replace(/[.#$\[\]\/\s]/g, '');
+}
+function showGateError(msg){
+  const el = document.getElementById('gate-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+async function verifyAndLogin(rawCode){
+  const code = sanitizeAccessCode(rawCode);
+  if(!code){ showGateError('رمز را وارد کنید.'); return; }
+  document.getElementById('gate-error').style.display = 'none';
+  document.getElementById('gate-status').textContent = 'در حال بررسی...';
+  document.getElementById('gate-submit').disabled = true;
+  accessCode = code;
+
+  try{
+    // Validate the shared password over HTTPS REST instead of waiting for
+    // Firebase's WebSocket connection. On mobile this is considerably more
+    // reliable. A wrong password normally returns 401/403 according to Rules.
+    const res = await fetch(dbRestUrl('__ping__'), {
+      method: 'GET',
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if(res.status === 401 || res.status === 403){
+      throw new Error('INVALID_CODE');
+    }
+    if(!res.ok){
+      throw new Error('HTTP_'+res.status);
+    }
+
+    localStorage.setItem(ACCESS_CODE_STORAGE_KEY, code);
+    document.getElementById('gate-overlay').style.display = 'none';
+    document.getElementById('gate-status').textContent = '';
+    await startApp();
+  }catch(e){
+    console.error('Login/Firebase error:', e);
+    accessCode = null;
+    document.getElementById('gate-status').textContent = '';
+    document.getElementById('gate-submit').disabled = false;
+
+    if(e && e.message === 'INVALID_CODE'){
+      showGateError('رمز واردشده اشتباه است.');
+    }else if(e && e.message && e.message.indexOf('HTTP_') === 0){
+      showGateError('فایربیس پاسخ مناسبی نداد ('+e.message.replace('HTTP_','')+').');
+    }else if(e && (e.name === 'TypeError' || e.name === 'AbortError')){
+      showGateError('ارتباط با فایربیس برقرار نشد. اینترنت یا VPN را بررسی کنید.');
+    }else{
+      showGateError('ارتباط با فایربیس برقرار نشد. دوباره تلاش کنید.');
+    }
+  }
+}
+
+document.getElementById('gate-submit').addEventListener('click', ()=>{
+  verifyAndLogin(document.getElementById('gate-password').value);
+});
+document.getElementById('gate-password').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') verifyAndLogin(document.getElementById('gate-password').value);
+});
+
+(function boot(){
+  firebase.initializeApp(FIREBASE_CONFIG);
+  try{
+    // Prefer long-polling for realtime traffic on mobile/filtered networks.
+    if(firebase.database && firebase.database.INTERNAL && firebase.database.INTERNAL.forceLongPolling){
+      firebase.database.INTERNAL.forceLongPolling();
+    }
+  }catch(e){ console.warn('Could not force Firebase long polling:', e); }
+  const saved = localStorage.getItem(ACCESS_CODE_STORAGE_KEY);
+  if(saved){
+    document.getElementById('gate-status').textContent = 'در حال ورود خودکار...';
+    verifyAndLogin(saved);
+  }
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
